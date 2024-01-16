@@ -54,38 +54,40 @@ async function orderPlacedHandler ({orderedItems, user }) {
     }
   }
 
-  BreweryModel.getAllBreweries(mapBreweries)
-  SupplierModel.getAllSuppliers(mapSuppliers)
-  KegSizeModel.getAllSizes(mapKegSizes)
+  await BreweryModel.getAllBreweries(mapBreweries)
+  await SupplierModel.getAllSuppliers(mapSuppliers)
+  await KegSizeModel.getAllSizes(mapKegSizes)
+
+  setTimeout(() => {
+    const file = makePDF({
+      user,
+      breweries,
+      suppliers,
+      orderedItems,
+      kegsizes,
+    })
+
+    let fname;
+
+    if (file.includes('/')){
+      fname = file.split('/').pop() 
+    }else{
+      fname = file.split('\\').pop() 
+    }
+
+    
+    // ... create the pdf and send the email  ...
+    sendMail({
+      user,
+      attachments: [
+        {
+          filename: fname,
+          path: file
+        },
+      ]
+    })
+  }, 2000)
   
-  const file = makePDF({
-    user,
-    breweries,
-    suppliers,
-    orderedItems,
-    kegsizes,
-  })
-
-  let fname;
-
-  if (file.includes('/')){
-    fname = file.split('/').pop() 
-  }else{
-    fname = file.split('\\').pop() 
-  }
-
-  
-  // ... create the pdf and send the email  ...
-  sendMail({
-    user,
-    attachments: [
-      {
-        filename: fname,
-        path: file
-      },
-    ]
-  })
-
 };
 
 
@@ -229,11 +231,13 @@ function makePDF(data){
 
       row.cell(`${idx+1}`)
       row.cell(item.arrival_date)
-      row.cell(supplier.name)
       row.cell(item.name)
-      row.cell(item.price_per_keg)
-      row.cell(brewery.name)
-      row.cell(keg.name)
+      row.cell(item.price_per_keg )
+
+      // FIX: Shows up as NA because arrays are empty      
+      row.cell(supplier?.name || "Not Available")
+      row.cell(brewery?.name || "Not Available")
+      row.cell(keg?.name || "Not Available")
     }
   }else{
 
